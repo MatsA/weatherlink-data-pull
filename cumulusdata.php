@@ -4,6 +4,8 @@
 // File layout http://wiki.sandaysoft.com/a/Realtime.txt 
 // 2017-01-29 To get better trend values for temp and pressure the csv files in chartswudata is used as history info. 
 //            Now trend calculation is using the measures 2 hours ago ->sub(new DateInterval('PT2H')) 
+// 2017-03-29 Changed filesuffix for files in folder "chartswudata" to .txt
+//            added cumulus[34] wich is used in Barmeter view
 // Mats A 2017-01 metzallo@gmail.com
 
 ob_start();
@@ -74,9 +76,11 @@ else{
         $cumulus[26] = $xml->{'davis_current_observation'}->{'temp_day_high_f'};      
         $cumulus[28] = $xml->{'davis_current_observation'}->{'temp_day_low_f'};         
         $cumulus[32] = $xml->{'davis_current_observation'}->{'wind_day_high_mph'};    
-                                                                                       // Historic CSV files are available in /chartswudata
+        $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};  // var_dump($cumulus[34]);                                                                             // Historic CSV files are available in /chartswudata
+        
         $f_date = $date_now->sub(new DateInterval('PT2H'));                            // Calculate the name of the file with 2 hour old data, OK at dayshift
-        $filename = '../chartswudata/'.$f_date->format('dmY').'.csv';                  // The file are named for example 28012017.csv
+        // $filename = '../chartswudata/'.$f_date->format('dmY').'.csv';                  // The file are named for example 28012017.csv
+        $filename = '../chartswudata/'.$f_date->format('dmY').'.txt';                  // Changed the file suffix to .txt
         $h_time = $f_date->format('H:i');                                              // Historic time value, 2 hours old  // var_dump ($f_date);
 
         if (($handle = fopen("$filename", "r")) == FALSE) {                            // Open the history file
