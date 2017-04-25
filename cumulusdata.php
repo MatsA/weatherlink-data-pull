@@ -1,12 +1,41 @@
 <?php
 
-// Uppdate the Cumulus realtime.txt after a call to Davis Weatherlink website with a XML answer
+// Mats A 2017-01 metzallo@gmail.com
+// For the weathertemplate https://weather34.com/homeweatherstation/
+// this program uppdates the Cumulus realtime.txt after a call to Davis Weatherlink website with a XML answer
+// Documentation is available at http://pysselilivet.blogspot.com/2017/01/install-weather34-with-weatherlink.html
+
+/*
+MIT License
+
+Copyright (c) 2017 
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/ 
+
 // File layout http://wiki.sandaysoft.com/a/Realtime.txt 
 // 2017-01-29 To get better trend values for temp and pressure the csv files in chartswudata is used as history info. 
 //            Now trend calculation is using the measures 2 hours ago ->sub(new DateInterval('PT2H')) 
 // 2017-03-29 Changed filesuffix for files in folder "chartswudata" to .txt
-//            added cumulus[34] wich is used in Barmeter view
-// Mats A 2017-01 metzallo@gmail.com
+//            added cumulus[34] wich is used in Barometer view
+// 2017-04-25 Due to a change in W34 it's impossible to use the history files in chartswudata  as a base for trendata.
+//            Extending the file realtime.txt so fields $cumulus[60-63] is used to store the history for press and temp
 
 ob_start();
 error_reporting(0);
@@ -78,38 +107,27 @@ else{
         $cumulus[32] = $xml->{'davis_current_observation'}->{'wind_day_high_mph'};    
         $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};  // var_dump($cumulus[34]);                                                                             // Historic CSV files are available in /chartswudata
         
-        $f_date = $date_now->sub(new DateInterval('PT2H'));                            // Calculate the name of the file with 2 hour old data, OK at dayshift
-        // $filename = '../chartswudata/'.$f_date->format('dmY').'.csv';                  // The file are named for example 28012017.csv
-        $filename = '../chartswudata/'.$f_date->format('dmY').'.txt';                  // Changed the file suffix to .txt
-        $h_time = $f_date->format('H:i');                                              // Historic time value, 2 hours old  // var_dump ($f_date);
+        $hour = date_create("$cumulus[1]")->format('H');                                // Create an save, in realtime.txt, values for trend caculation every hour 
+        $hour_l = date_create("$cumulus_l[1]")->format('H');
+                                                                                        // echo "\n $hour $hour_l \n";
+        if ($hour <> $hour_l) {                                                         // If new hour save data for trendvalues
 
-        if (($handle = fopen("$filename", "r")) == FALSE) {                            // Open the history file
-                                                                                       // No file found,  use the last trend values
-               $cumulus[18] = $cumulus_l[18];                                          // Barometer trend
-               $cumulus[25] = $cumulus_l[25];                                          // Temp trend
+            $cumulus[61] = $cumulus_l[60];                                              // Save the 1 hour old temp value 
+            $cumulus[60] = $cumulus[2];                                                 // Save current temp F
+
+            $cumulus[63] = $cumulus_l[62];                                              // Save the 1 hour old press value 
+            $cumulus[62] = $cumulus[10];                                                // Save current press
         }
         else {
-            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {                   // Stop at latest at file end
-    
-                if ($data[0] == "<br>" || $data[0] == FALSE || $data[0] == "Time" ) {   // Dismiss not valid data
-                    // NOP
-                }               
-                else {                                                                  // Calculate Trendvalues
+            
+            $cumulus[60] = $cumulus_l[60];                                              // Else, overwrite template data
+            $cumulus[61] = $cumulus_l[61]; 
+            $cumulus[62] = $cumulus_l[62]; 
+            $cumulus[63] = $cumulus_l[63]; 
+        }
 
-                    $r_date = date_create_from_format('Y-m-d H:i:s', "$data[0]" );      // Make record date an object
-                
-                    if ($r_date->format('H:i') < $h_time ) {                            // Record time < Historic time 
-
-                        $h_temp = round((float)(1.8000*$data[1] + 32), 1);              // Temp in celsius => F, Check cToF in shared.php
-                        $h_press = round((float)(0.02952999*$data[3]), 2);              // Pressure in mbr => inches, Check mbToin in shared.ph // echo "$h_temp $h_press \n";
-                    }
-                }
-            }
-            fclose($handle);                                                            
-
-            $cumulus[18] = round((floatval($cumulus[10]) - $h_press),4);                // Barometer trend, current - history
-            $cumulus[25] = floatval($cumulus[2]) - $h_temp;                             // Temp trend // echo "$cumulus[25] $cumulus[18]  \n";
-        }  
+        $cumulus[18] = round((floatval($cumulus[10]) - $cumulus[63]),4);                // Barometer trend, current - history
+        $cumulus[25] = floatval($cumulus[2]) - $cumulus[61];                            // Temp trend // echo "$cumulus[25] $cumulus[18]  \n";
 
         if ($cumulus[0] == $cumulus_l[0]) {                                             // Same date "d/m/y" ?Current and last
 
