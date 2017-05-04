@@ -36,6 +36,7 @@ SOFTWARE.
 //            added cumulus[34] wich is used in Barometer view
 // 2017-04-25 Due to a change in W34 it's impossible to use the history files in chartswudata  as a base for trendata.
 //            Extending the file realtime.txt so fields $cumulus[60-63] is used to store the history for press and temp
+// 2017-05-04 Added fields min barometer => cumulus[36] and windrun => cumulus[17]. Onlinefil realtime.txt is created if missing
 
 ob_start();
 error_reporting(0);
@@ -56,6 +57,13 @@ $wlink_pass = "YYYY";
 
 $cumulus = array();                         // Current observation data 
 $cumulus_l = array();                       // Last observation data 
+
+if (file_exists($file_realt)) {             // Create the online file if don't exist
+    //NOP
+}
+else {
+    copy($file_templ,$file_realt);
+}
                                             // Fetch template data
 $file_wrk = file_get_contents($file_templ); // echo readfile("../add_on/realtime.templ");
 $cumulus = explode(" ", $file_wrk);         // var_dump ($cumulus);
@@ -65,7 +73,7 @@ $file_wrk = fread($handle, 1024);
 fclose($handle);
 $cumulus_l = explode(" ", $file_wrk);       
                                                                             
-// Get the current "conditions" information from Davis Weatherlink
+              // *******  Get the current "conditions" from Davis Weatherlink ******* //
 $xml = simplexml_load_file('http://www.weatherlink.com/xml.php?user='.$wlink_user.'&pass='.$wlink_pass.'');  // var_dump($xml);
 
 // If wrong "conditions" data no file update  
@@ -75,13 +83,14 @@ if ($xml->{'temp_c'} == NULL) {
 else{ 
 
     // Please note Field no in the Cumulus spec.  -1 => array no
-    $cumulus[0] = $date_now->format('d/m/y');
-
-    $date_wrk = $xml->{'observation_time_rfc822'};                                    
-    $cumulus[1] = date_create("$date_wrk")->format('H:i:s');                          // Observation time from Weatherlink
+   
+    $date_wrk = $xml->{'observation_time_rfc822'};
+    $cumulus[0] = date_create($date_wrk)->format('d/m/y');                                    
+    $cumulus[1] = date_create($date_wrk)->format('H:i:s');                            // Observation time from Weatherlink
                                                                                       // echo ("$cumulus[1] $cumulus_l[1] \n");
     if ($cumulus[1] <> $cumulus_l[1])  {                                              // Update file, not same time/observation as last
-    
+
+               // *******  Direct values ******* //
         $cumulus[2] = $xml->{'temp_f'};                                               // Temp F
         $cumulus[3] = $xml->{'relative_humidity'};
         $cumulus[4] = $xml->{'dewpoint_f'};
@@ -105,10 +114,12 @@ else{
         $cumulus[26] = $xml->{'davis_current_observation'}->{'temp_day_high_f'};      
         $cumulus[28] = $xml->{'davis_current_observation'}->{'temp_day_low_f'};         
         $cumulus[32] = $xml->{'davis_current_observation'}->{'wind_day_high_mph'};    
-        $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};  // var_dump($cumulus[34]);                                                                             // Historic CSV files are available in /chartswudata
-        
-        $hour = date_create("$cumulus[1]")->format('H');                                // Create an save, in realtime.txt, values for trend caculation every hour 
-        $hour_l = date_create("$cumulus_l[1]")->format('H');
+        $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};  // var_dump($cumulus[34]);
+        $cumulus[36] = $xml->{'davis_current_observation'}->{'pressure_day_low_in'};   
+
+               // *******  Calculated values ******* //    
+        $hour = date_create($cumulus[1])->format('H');                                  // Create an save, in realtime.txt, values for trend caculation every hour 
+        $hour_l = date_create($cumulus_l[1])->format('H');
                                                                                         // echo "\n $hour $hour_l \n";
         if ($hour <> $hour_l) {                                                         // If new hour save data for trendvalues
 
@@ -130,7 +141,11 @@ else{
         $cumulus[25] = floatval($cumulus[2]) - $cumulus[61];                            // Temp trend // echo "$cumulus[25] $cumulus[18]  \n";
 
         if ($cumulus[0] == $cumulus_l[0]) {                                             // Same date "d/m/y" ?Current and last
-
+                                                                                        // Windrun calculation http://wiki.sandaysoft.com/a/Windrun
+            $diff = date_diff(date_create($cumulus[1]), date_create($cumulus_l[1]));    // Observation time current - observation last
+            $hours = ($diff->h) + ($diff->i)/60 + ($diff->s)/3600;                      // Diff, hours + minutes + seconds in hours var_dump ($hours);
+            $cumulus[17] = round($cumulus_l[17] + ($cumulus[5]*$hours),4);                                                                            
+                                                                                        // Daily max wind calculation
             if ($cumulus[5] > $cumulus_l[30]) {                                         // Same date and if current wind 10 min avg > daily max avg => update daily max wind avg,
               
                 $cumulus[30] = floatval($cumulus[5]);                                   // echo "$cumulus[30] ";     
@@ -138,16 +153,20 @@ else{
             else { 
                                                                                         // else, update with last data, owerwrite template data 
                 $cumulus[30] = $cumulus_l[30];                         
-            }
+            }                                                                           // End max wind calculation
         }
-        else {                                                                          // New day, set daily max average to current
+        else {                                                                          // New day
+                                                                                        // Windrun calculation
+            $hours = date_create($cumulus[1])->format('H') + 
+                        date_create($cumulus[1])->format('i')/60;                       // Hours + minutes, since midnight in hours var_dump ($cumulus[5]);
+            $cumulus[17] = round($cumulus[5]*$hours,4);                                 // Ten min avg wind * hours. var_dump ($cumulus[17]);
             
-            $cumulus[30] = floatval($cumulus[5]);
+            $cumulus[30] = floatval($cumulus[5]);                                       // Daily max wind calculation. Set daily max wind average to current
         }
       
         $cumulus[46] = round((($cumulus[7] + $cumulus_l[7])/2),0);                      // Wind direction average, no decimals
 
-    // Update the realtime.txt file 
+                   // ******* Update the realtime.txt file ******* //
     $file_live = implode(" ",$cumulus);
     $handle = fopen($file_realt, "w");
     fwrite($handle, $file_live);
