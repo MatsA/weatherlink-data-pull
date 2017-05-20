@@ -37,6 +37,12 @@ SOFTWARE.
 // 2017-04-25 Due to a change in W34 it's impossible to use the history files in chartswudata  as a base for trendata.
 //            Extending the file realtime.txt so fields $cumulus[60-63] is used to store the history for press and temp
 // 2017-05-04 Added fields min barometer => cumulus[36] and windrun => cumulus[17]. Onlinefil realtime.txt is created if missing
+// 2017-05-20 Added fields uv-index => cumulus[43] and solar radiation => cumulus[45] wich will be updated if available, otherwise set to 0
+//            Change in validation of data from Davis Weatherlink due to that they allways returns an answer even if wrong credentials
+
+                // ******* Weather Link credentials. Check documentation !
+$wlink_user = "XXXX";                    
+$wlink_pass = "YYYY";
 
 ob_start();
 error_reporting(0);
@@ -51,9 +57,6 @@ $date_now = new DateTime('NOW');
 
 $file_templ = "../add_on/realtime.templ";   // Template file
 $file_realt = "../add_on/realtime.txt";     // Realtime/Online file 
-
-$wlink_user = "XXXX";                    // Weather Link credentials 
-$wlink_pass = "YYYY";
 
 $cumulus = array();                         // Current observation data 
 $cumulus_l = array();                       // Last observation data 
@@ -75,12 +78,9 @@ $cumulus_l = explode(" ", $file_wrk);
                                                                             
               // *******  Get the current "conditions" from Davis Weatherlink ******* //
 $xml = simplexml_load_file('http://www.weatherlink.com/xml.php?user='.$wlink_user.'&pass='.$wlink_pass.'');  // var_dump($xml);
-
-// If wrong "conditions" data no file update  
-if ($xml->{'temp_c'} == NULL) {
-    // NOP
-}
-else{ 
+                                                                                    // $xml = simplexml_load_file("../add_on/WL.xml");  
+// If wrong "conditions" data no file update
+if ($xml->{'station_id'} == $wlink_user) {
 
     // Please note Field no in the Cumulus spec.  -1 => array no
    
@@ -114,7 +114,7 @@ else{
         $cumulus[26] = $xml->{'davis_current_observation'}->{'temp_day_high_f'};      
         $cumulus[28] = $xml->{'davis_current_observation'}->{'temp_day_low_f'};         
         $cumulus[32] = $xml->{'davis_current_observation'}->{'wind_day_high_mph'};    
-        $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};  // var_dump($cumulus[34]);
+        $cumulus[34] = $xml->{'davis_current_observation'}->{'pressure_day_high_in'};   // var_dump($cumulus[34]);
         $cumulus[36] = $xml->{'davis_current_observation'}->{'pressure_day_low_in'};   
 
                // *******  Calculated values ******* //    
@@ -143,7 +143,7 @@ else{
         if ($cumulus[0] == $cumulus_l[0]) {                                             // Same date "d/m/y" ?Current and last
                                                                                         // Windrun calculation http://wiki.sandaysoft.com/a/Windrun
             $diff = date_diff(date_create($cumulus[1]), date_create($cumulus_l[1]));    // Observation time current - observation last
-            $hours = ($diff->h) + ($diff->i)/60 + ($diff->s)/3600;                      // Diff, hours + minutes + seconds in hours var_dump ($hours);
+            $hours = ($diff->h) + ($diff->i)/60 + ($diff->s)/3600;                      // Diff, hours + minutes + seconds in hours. var_dump ($hours);
             $cumulus[17] = round($cumulus_l[17] + ($cumulus[5]*$hours),4);                                                                            
                                                                                         // Daily max wind calculation
             if ($cumulus[5] > $cumulus_l[30]) {                                         // Same date and if current wind 10 min avg > daily max avg => update daily max wind avg,
@@ -158,10 +158,28 @@ else{
         else {                                                                          // New day
                                                                                         // Windrun calculation
             $hours = date_create($cumulus[1])->format('H') + 
-                        date_create($cumulus[1])->format('i')/60;                       // Hours + minutes, since midnight in hours var_dump ($cumulus[5]);
+                        date_create($cumulus[1])->format('i')/60;                       // Hours + minutes, since midnight in hours. var_dump ($cumulus[5]);
             $cumulus[17] = round($cumulus[5]*$hours,4);                                 // Ten min avg wind * hours. var_dump ($cumulus[17]);
             
             $cumulus[30] = floatval($cumulus[5]);                                       // Daily max wind calculation. Set daily max wind average to current
+        }
+
+        if ($xml->{'davis_current_observation'}->{'uv_index'} == NULL) {                // uv-index, if mesure not is available set to 0
+            
+            $cumulus[43] = 0;                                                          
+        }
+        else { 
+
+            $cumulus[43] = $xml->{'davis_current_observation'}->{'uv_index'};           // uv-index OK
+        }
+
+        if ($xml->{'davis_current_observation'}->{'solar_radiation'} == NULL) {         // solar radiation, if mesure not is available set to 0
+            
+            $cumulus[45] = 0;
+        }
+        else {                                                                          
+
+            $cumulus[45] = $xml->{'davis_current_observation'}->{'solar_radiation'};    // solar radiation OK
         }
       
         $cumulus[46] = round((($cumulus[7] + $cumulus_l[7])/2),0);                      // Wind direction average, no decimals
