@@ -39,12 +39,16 @@ SOFTWARE.
 // 2017-05-04 Added fields min barometer => cumulus[36] and windrun => cumulus[17]. Onlinefil realtime.txt is created if missing
 // 2017-05-20 Added fields uv-index => cumulus[43] and solar radiation => cumulus[45] wich will be updated if available, otherwise set to 0
 //            Change in validation of data from Davis Weatherlink due to that they allways returns an answer even if wrong credentials
-// 2017-05-xx Added fields temp high/low time => cumulus[27/29] and wind high/max time [31/33]
+// 2017-05-26 Added fields temp high/low time => cumulus[27/29] and wind high/max time [31/33]
 //            W34 changed use for cumulus[5/6/40] so updated app.
-  
+// 2017-07-07 Added an extra temperature sensor, Davis 6372, which in our case mesures water temperature in the sea.
+//            cumulus[22], inside temp, is used if $water_temp is true and XML value, 'temp_extra_1', is valid
+
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
 $wlink_pass = "YYYY";
+
+$water_temp = false;             
 
 ob_start();
 error_reporting(0);
@@ -189,6 +193,15 @@ if ($xml->{'station_id'} == $wlink_user) {
         }
       
         $cumulus[46] = round((($cumulus[7] + $cumulus_l[7])/2),0);                      // Wind direction average, no decimals
+
+        if  ($water_temp) {                                                             // Water temp. 
+            if ($xml->{'davis_current_observation'}->{'temp_extra_1'} == NULL){
+            //NOP                                                                       // Inside temp. is used
+            }
+            else {
+             $cumulus[22] = $xml->{'davis_current_observation'}->{'temp_extra_1'};      // Use inside temperature field to show watertemp
+            }
+        }
 
                    // ******* Update the realtime.txt file ******* //
     $file_live = implode(" ",$cumulus);
