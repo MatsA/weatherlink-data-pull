@@ -41,12 +41,14 @@ SOFTWARE.
 //            Change in validation of data from Davis Weatherlink due to that they allways returns an answer even if wrong credentials
 // 2017-05-26 Added fields temp high/low time => cumulus[27/29] and wind high/max time [31/33]
 //            W34 changed use for cumulus[5/6/40] so updated app.
-// 2017-07-07 Added an extra temperature sensor, Davis 6372, which in our case mesures water temperature in the sea.
-//            cumulus[22], inside temp, is used if $water_temp is true and XML value, 'temp_extra_1', is valid
+// 2017-06-21 Added an extra temperature sensor, Davis 6372, which in our case mesures water temperature in the sea.
+//            cumulus[22], inside temp is used if $water_temp is true and value is valid
+// 2018-03-19 Davis is updating Weatherlink to WL 2.0 with new host and user is Device ID
 
-                // ******* Weather Link credentials. Check documentation !
+// ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
 $wlink_pass = "YYYY";
+$wlink_apiToken = "ZZZZ";
 
 $water_temp = false;             
 
@@ -82,14 +84,18 @@ fclose($handle);
 $cumulus_l = explode(" ", $file_wrk);       
                                                                             
               // *******  Get the current "conditions" from Davis Weatherlink ******* //
-$xml = simplexml_load_file('http://www.weatherlink.com/xml.php?user='.$wlink_user.'&pass='.$wlink_pass.'');  // var_dump($xml);
+// $xml = simplexml_load_file('http://www.weatherlink.com/xml.php?user='.$wlink_user.'&pass='.$wlink_pass.'');  // URL to old API
+
+              // ******* URL for Weatherlink 2.0 ******* //
+$xml = simplexml_load_file('http://api.weatherlink.com/v1/NoaaExt.xml?user='.$wlink_user.'&pass='.$wlink_pass.'&apiToken='.$wlink_apiToken.'');  // var_dump($xml);
+
                                                                                     // $xml = simplexml_load_file("../add_on/WL.xml");  
 // If wrong "conditions" data no file update
-if ($xml->{'station_id'} == $wlink_user) {
+if ($xml->{'davis_current_observation'}->{'DID'} == $wlink_user) {
 
     // Please note Field no in the Cumulus spec.  -1 => array no
     $cumulus[0] = date_create($xml->{'observation_time_rfc822'})->format('d/m/y');                                    
-    $cumulus[1] = date_create($xml->{'observation_time_rfc822'})->format('H:i:s');                            // Observation time from Weatherlink
+    $cumulus[1] = date_create($xml->{'observation_time_rfc822'})->format('H:i:s');    // Observation time from Weatherlink
                                                                                       // echo ("$cumulus[1] $cumulus_l[1] \n");
     if ($cumulus[1] <> $cumulus_l[1])  {                                              // Update file, not same time/observation as last
 
