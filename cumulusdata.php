@@ -45,6 +45,7 @@ SOFTWARE.
 //            cumulus[22], inside temp is used if $water_temp is true and value is valid
 // 2018-03-19 Davis is updating Weatherlink to WL 2.0 with new host and user is Device ID
 // 2018-10-15 Rewrite cause WL data is pulled via Curl and JSON as response
+// 2018-11-05 Added field, yesterday's rainfall => $cumulus[21] 
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
@@ -156,6 +157,8 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
         $cumulus[25] = floatval($cumulus[2]) - $cumulus[61];                                // Temp trend // echo "$cumulus[25] $cumulus[18]  \n";
 
         if ($cumulus[0] == $cumulus_l[0]) {                                                 // Same date "d/m/y" ?Current and last
+                                                                                            // Rain yesterday
+            $cumulus[21] = $cumulus_l[21];                                                  // Update with last data, overwrite template data 
                                                                                             // Windrun calculation http://wiki.sandaysoft.com/a/Windrun
             $diff = date_diff(date_create($cumulus[1]), date_create($cumulus_l[1]));        // Observation time current - observation last
             $hours = ($diff->h) + ($diff->i)/60 + ($diff->s)/3600;                          // Diff, hours + minutes + seconds in hours. var_dump ($hours);
@@ -173,6 +176,8 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
             }                                                                               // End max wind calculation
         }
         else {                                                                              // New day
+                                                                                            // Rain yesterday
+            $cumulus[21] = $cumulus_l[9];                                                   // Update value for yesterdays rainfall
                                                                                             // Windrun calculation
             $hours = date_create($cumulus[1])->format('H') + 
                         date_create($cumulus[1])->format('i')/60;                           // Hours + minutes, since midnight in hours. var_dump ($cumulus[6]);
