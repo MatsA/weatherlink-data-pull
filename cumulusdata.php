@@ -29,7 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */ 
 
-// File layout https://cumuluswiki.wxforum.net/a/Realtime.txt 
+// File layout http://wiki.sandaysoft.com/a/Realtime.txt 
 // 2017-01-29 To get better trend values for temp and pressure the csv files in chartswudata is used as history info. 
 //            Now trend calculation is using the measures 2 hours ago ->sub(new DateInterval('PT2H')) 
 // 2017-03-29 Changed filesuffix for files in folder "chartswudata" to .txt
@@ -46,14 +46,13 @@ SOFTWARE.
 // 2018-03-19 Davis is updating Weatherlink to WL 2.0 with new host and user is Device ID
 // 2018-10-15 Rewrite cause WL data is pulled via Curl and JSON as response
 // 2018-11-05 Added field, yesterday's rainfall => $cumulus[21] 
-// 2018-11-30 Wind ten minutes gust available via JSON => $cumulus[40]
-
+  
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
 $wlink_pass = "YYYY";
 $wlink_apiToken = "ZZZZ";
 
-$water_temp = false;
+$water_temp = true;
 
 ob_start();
 error_reporting(0);
@@ -132,7 +131,7 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
         $cumulus[33] = date_create($wlJson->davis_current_observation->wind_day_high_time)->format('H:i');    
         $cumulus[34] = $wlJson->davis_current_observation->pressure_day_high_in;   
         $cumulus[36] = $wlJson->davis_current_observation->pressure_day_low_in;
-        $cumulus[40] = $wlJson->davis_current_observation->wind_ten_min_gust_mph;           // Windgust avg. 10 min
+        $cumulus[40] = $wlJson->wind_mph;                                                   // Windgust avg. 10 min(not avail via XML) use wind this moment instead  
 
                // *******  Calculated values ******* //
         $hour = date_create($cumulus[1])->format('H');                                      // Create an save, in realtime.txt, values for trend caculation every hour 
