@@ -46,7 +46,7 @@ SOFTWARE.
 // 2018-03-19 Davis is updating Weatherlink to WL 2.0 with new host and user is Device ID
 // 2018-10-15 Rewrite cause WL data is pulled via Curl and JSON as response
 // 2018-11-05 Added field, yesterday's rainfall => $cumulus[21]
-// 2018-11-30 Ten minutes windgust, available via JSON => $cumulus[40]
+// 2018-11-30 Ten minutes windgust, available via JSON => $cumulus[40] 
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
