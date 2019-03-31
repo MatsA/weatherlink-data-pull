@@ -2,7 +2,8 @@
 
 // Mats A 2017-01 metzallo@gmail.com
 // For the weathertemplate https://weather34.com/homeweatherstation/
-// this program uppdates the Cumulus realtime.txt after a call to Davis Weatherlink website with a XML answer
+// Source https://github.com/ktrue/CU-HWS
+// This program uppdates the Cumulus realtime.txt after a call to Davis Weatherlink website with a JSON answer
 // Documentation is available at http://pysselilivet.blogspot.com/2017/01/install-weather34-with-weatherlink.html
 
 /*
@@ -47,7 +48,8 @@ SOFTWARE.
 // 2018-10-15 Rewrite cause WL data is pulled via Curl and JSON as response
 // 2018-11-05 Added field, yesterday's rainfall => $cumulus[21]
 // 2018-11-30 Ten minutes windgust, available via JSON => $cumulus[40]
-// 2019-12-03 Added calculation for rain last hour => $cumulus[47] 
+// 2018-12-03 Added calculation for rain last hour => $cumulus[47]
+// 2019-03-31 Don’t fetch data more often than every minute. Due to avoiding croon job.
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
@@ -73,11 +75,21 @@ $cumulus = array();                         // Current observation data
 $cumulus_l = array();                       // Last observation data 
 
 if (file_exists($file_realt)) {             // Create the online file if don't exist
-    //NOP
+   
+  if(time() - filemtime($file_realt)>=60){
+       
+    $getNewData = TRUE;                     // If file older than 60 seconds get new data
+  }
+  else {
+        $getNewData = FALSE;
+  }
 }
 else {
-    copy($file_templ,$file_realt);
+  copy($file_templ,$file_realt);
+  $getNewData = TRUE;
 }
+
+if ($getNewData) {
                                             // Fetch template data
 $file_wrk = file_get_contents($file_templ); // echo readfile("../add_on/realtime.templ");
 $cumulus = explode(" ", $file_wrk);         // var_dump ($cumulus);
@@ -166,7 +178,7 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
         if ($cumulus[0] == $cumulus_l[0]) {                                                 // Same date "d/m/y" ?Current and last
                                                                                             // Rain yesterday
             $cumulus[21] = $cumulus_l[21];                                                  // Update with last data, overwrite template data 
-                                                                                            // Windrun calculation http://wiki.sandaysoft.com/a/Windrun
+                                                                                            // Windrun calculation https://cumuluswiki.wxforum.net/a/Windrun
             $diff = date_diff(date_create($cumulus[1]), date_create($cumulus_l[1]));        // Observation time current - observation last
             $hours = ($diff->h) + ($diff->i)/60 + ($diff->s)/3600;                          // Diff, hours + minutes + seconds in hours. var_dump ($hours);
             $cumulus[17] = round($cumulus_l[17] + ($cumulus[6]*$hours),4);                                                                            
@@ -229,5 +241,5 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
  } // New date END
 
 } //  Wrong "conditions" data END
-
+} // Get new data END
 ?>
