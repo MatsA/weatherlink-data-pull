@@ -6,7 +6,7 @@ Weatherlink supports the Davis weather stations;
   * Davis Vantage Pro2
   * Davis Vantage Vue
   
-![w34](https://user-images.githubusercontent.com/16189982/49284323-8647f500-f494-11e8-9fa2-94be478bb90d.jpg)
+![w34](https://user-images.githubusercontent.com/16189982/55459434-d627fb80-55ef-11e9-990d-8ba1c3cfbadb.png)
 
 This PHP program, cumulusdata.php, pulls JSON data from Davis WeatherLink http://www.weatherlink.com and updates an online file, type Cumulus with name realtime.txt, at the Weather34 site. Documentation is available at http://pysselilivet.blogspot.com/2017/01/install-weather34-with-weatherlink.html
 
