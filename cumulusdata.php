@@ -1,8 +1,10 @@
 <?php
 
 // Mats A 2017-01 metzallo@gmail.com
-// For the weathertemplate https://weather34.com/homeweatherstation/
-// Source https://github.com/ktrue/CU-HWS
+// For a weathertemplate which was initially designed Brian Underdown, https://weather34.com/homeweatherstation/
+// Now maintained by Ken True with source https://github.com/ktrue/CU-HWS
+// My version is found at https://vader.domsten.nu/
+//
 // This program uppdates the Cumulus realtime.txt after a call to Davis Weatherlink website with a JSON answer
 // Documentation is available at http://pysselilivet.blogspot.com/2017/01/install-weather34-with-weatherlink.html
 
@@ -30,7 +32,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */ 
 
-// File layout https://cumuluswiki.wxforum.net/a/Realtime.txt 
+// File layout https://cumuluswiki.org/a/Realtime.txt
 // 2017-01-29 To get better trend values for temp and pressure the csv files in chartswudata is used as history info. 
 //            Now trend calculation is using the measures 2 hours ago ->sub(new DateInterval('PT2H')) 
 // 2017-03-29 Changed filesuffix for files in folder "chartswudata" to .txt
@@ -50,6 +52,7 @@ SOFTWARE.
 // 2018-11-30 Ten minutes windgust, available via JSON => $cumulus[40]
 // 2018-12-03 Added calculation for rain last hour => $cumulus[47]
 // 2019-03-31 Don’t fetch data more often than every minute. Due to avoiding croon job.
+// 2020-01-23 Som links updated, no code change !
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
