@@ -53,6 +53,7 @@ SOFTWARE.
 // 2018-12-03 Added calculation for rain last hour => $cumulus[47]
 // 2019-03-31 Don’t fetch data more often than every minute. Due to avoiding croon job.
 // 2020-01-23 Som links updated, no code change !
+// 2021-03-21 Wind direction average, $cumulus[46], update => https://stackoverflow.com/questions/10832287/calculate-average-of-wind-direction-in-mysql
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
@@ -228,6 +229,14 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
         }
       
         $cumulus[46] = round((($cumulus[7] + $cumulus_l[7])/2),0);                          // Wind direction average, no decimals
+        
+        if (abs($cumulus[7] - $cumulus_l[7]) > 180){                                        // Correction for near north
+            $cumulus[46] = $cumulus[46] + 180;                                              // For example input as 355 and 10
+        }
+        
+        if ($cumulus[46] >= 360){
+            $cumulus[46] = $cumulus[46] - 360;
+        }
 
         if  ($water_temp) {                                                                 // Water temp. 
             if (property_exists($wlJson->davis_current_observation, 'temp_extra_1')){
