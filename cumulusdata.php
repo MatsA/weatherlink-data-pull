@@ -54,6 +54,7 @@ SOFTWARE.
 // 2019-03-31 Don’t fetch data more often than every minute. Due to avoiding croon job.
 // 2020-01-23 Som links updated, no code change !
 // 2021-03-21 Wind direction average, $cumulus[46], update => https://stackoverflow.com/questions/10832287/calculate-average-of-wind-direction-in-mysql
+// 2022-03-10 Added $cumulus[35/37] pressure times
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
@@ -147,8 +148,10 @@ if ($wlJson->davis_current_observation->DID == $wlink_user) {
         $cumulus[29] = date_create($wlJson->davis_current_observation->temp_day_low_time)->format('H:i');         
         $cumulus[32] = $wlJson->davis_current_observation->wind_day_high_mph;
         $cumulus[33] = date_create($wlJson->davis_current_observation->wind_day_high_time)->format('H:i');    
-        $cumulus[34] = $wlJson->davis_current_observation->pressure_day_high_in;   
+        $cumulus[34] = $wlJson->davis_current_observation->pressure_day_high_in;
+        $cumulus[35] = date_create($wlJson->davis_current_observation->pressure_day_high_time)->format('H:i');
         $cumulus[36] = $wlJson->davis_current_observation->pressure_day_low_in;
+        $cumulus[37] = date_create($wlJson->davis_current_observation->pressure_day_low_time)->format('H:i');
         $cumulus[40] = $wlJson->davis_current_observation->wind_ten_min_gust_mph;           // Windgust avg. 10 min
 
                // *******  Calculated values ******* //
