@@ -55,6 +55,7 @@ SOFTWARE.
 // 2020-01-23 Som links updated, no code change !
 // 2021-03-21 Wind direction average, $cumulus[46], update => https://stackoverflow.com/questions/10832287/calculate-average-of-wind-direction-in-mysql
 // 2022-03-10 Added $cumulus[35/37] pressure times
+// 2022-11-12 Use case is when indoor device is ok but no outdoor data is available, don't update "realtime.txt".
   
                 // ******* Weather Link credentials. Check documentation !
 $wlink_user = "XXXX";                    
@@ -113,7 +114,7 @@ $curl_response = curl_exec($curl_handle);
 $wlJson = json_decode($curl_response);                                                      // var_dump ($wlJson);
 
 // If wrong "conditions" data no file update
-if ($wlJson->davis_current_observation->DID == $wlink_user) {
+if (($wlJson->davis_current_observation->DID == $wlink_user) and (property_exists($wlJson, 'temp_f'))) {
 
     // Please note Field no in the Cumulus spec.  -1 => array no
     $cumulus[0] = date_create($wlJson->observation_time_rfc822)->format('d/m/y');                                    
